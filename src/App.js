@@ -1,366 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import Navbar from './components/Navbar';
+import PetList from './components/PetList';
+import PetForm from './components/PetForm';
+import AdopterForm from './components/AdopterForm';
+import AdopterList from './components/AdopterList';
+import api from './api/apiService';
 
-// API Base URL - Replace with your actual backend URL
-const API_BASE_URL = 'http://localhost:3000/api';
-
-// API Service using Fetch (Axios alternative for this environment)
-const api = {
-  get: async (endpoint) => {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`);
-    if (!response.ok) throw new Error('Network response was not ok');
-    return response.json();
-  },
-  post: async (endpoint, data) => {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Network response was not ok');
-    return response.json();
-  },
-  put: async (endpoint, data) => {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Network response was not ok');
-    return response.json();
-  },
-  delete: async (endpoint) => {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Network response was not ok');
-    return response.json();
-  },
-};
-
-// Navbar Component
-const Navbar = () => {
-  return (
-    <nav className="navbar">
-      <div className="nav-container">
-        <h1 className="nav-logo">🐾 Pet Adoption System</h1>
-        <p className="nav-subtitle">Connecting Pets with Loving Homes</p>
-      </div>
-    </nav>
-  );
-};
-
-// Pet List Component
-const PetList = ({ pets, onEdit, onDelete, loading, error }) => {
-  if (loading) {
-    return <div className="loading">Loading pets...</div>;
-  }
-
-  if (error) {
-    return <div className="error">Error: {error}</div>;
-  }
-
-  if (pets.length === 0) {
-    return <div className="empty-state">No pets available. Add your first pet!</div>;
-  }
-
-  return (
-    <div className="pet-grid">
-      {pets.map((pet) => (
-        <div key={pet.id} className="pet-card">
-          <div className="pet-header">
-            <h3>{pet.name}</h3>
-            <span className={`badge ${pet.adopted ? 'badge-adopted' : 'badge-available'}`}>
-              {pet.adopted ? 'Adopted' : 'Available'}
-            </span>
-          </div>
-          <div className="pet-details">
-            <p><strong>Type:</strong> {pet.type}</p>
-            <p><strong>Breed:</strong> {pet.breed}</p>
-            <p><strong>Breedable:</strong> {pet.breedable ? 'Yes' : 'No'}</p>
-            <p><strong>Diseases:</strong> {pet.diseases || 'None'}</p>
-            {pet.adopted && pet.adopter && (
-              <div className="adopter-info">
-                <p><strong>Adopted by:</strong> {pet.adopter.name}</p>
-                <p><strong>Contact:</strong> {pet.adopter.contact}</p>
-              </div>
-            )}
-          </div>
-          <div className="pet-actions">
-            <button onClick={() => onEdit(pet)} className="btn btn-edit">Edit</button>
-            <button onClick={() => onDelete(pet.id)} className="btn btn-delete">Delete</button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// Pet Form Component
-const PetForm = ({ editingPet, onSubmit, onCancel, adopters }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    type: '',
-    breed: '',
-    adopted: false,
-    breedable: false,
-    diseases: '',
-    adopterId: '',
-  });
-
-  useEffect(() => {
-    if (editingPet) {
-      setFormData({
-        name: editingPet.name || '',
-        type: editingPet.type || '',
-        breed: editingPet.breed || '',
-        adopted: editingPet.adopted || false,
-        breedable: editingPet.breedable || false,
-        diseases: editingPet.diseases || '',
-        adopterId: editingPet.adopterId || '',
-      });
-    }
-  }, [editingPet]);
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
-  const handleReset = () => {
-    setFormData({
-      name: '',
-      type: '',
-      breed: '',
-      adopted: false,
-      breedable: false,
-      diseases: '',
-      adopterId: '',
-    });
-    if (onCancel) onCancel();
-  };
-
-  return (
-    <div className="form-container">
-      <h2>{editingPet ? 'Update Pet' : 'Add New Pet'}</h2>
-      <div className="form">
-        <div className="form-row">
-          <div className="form-group">
-            <label>Pet Name *</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              placeholder="e.g., Max"
-            />
-          </div>
-          <div className="form-group">
-            <label>Type *</label>
-            <select name="type" value={formData.type} onChange={handleChange} required>
-              <option value="">Select type</option>
-              <option value="dog">Dog</option>
-              <option value="cat">Cat</option>
-              <option value="bird">Bird</option>
-              <option value="rabbit">Rabbit</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label>Breed *</label>
-            <input
-              type="text"
-              name="breed"
-              value={formData.breed}
-              onChange={handleChange}
-              required
-              placeholder="e.g., Golden Retriever"
-            />
-          </div>
-          <div className="form-group">
-            <label>Diseases</label>
-            <input
-              type="text"
-              name="diseases"
-              value={formData.diseases}
-              onChange={handleChange}
-              placeholder="e.g., None or specific condition"
-            />
-          </div>
-        </div>
-
-        <div className="form-row checkbox-row">
-          <div className="form-group-checkbox">
-            <input
-              type="checkbox"
-              id="adopted"
-              name="adopted"
-              checked={formData.adopted}
-              onChange={handleChange}
-            />
-            <label htmlFor="adopted">Adopted</label>
-          </div>
-          <div className="form-group-checkbox">
-            <input
-              type="checkbox"
-              id="breedable"
-              name="breedable"
-              checked={formData.breedable}
-              onChange={handleChange}
-            />
-            <label htmlFor="breedable">Breedable</label>
-          </div>
-        </div>
-
-        {formData.adopted && (
-          <div className="form-group">
-            <label>Select Adopter</label>
-            <select name="adopterId" value={formData.adopterId} onChange={handleChange}>
-              <option value="">Select adopter</option>
-              {adopters.map((adopter) => (
-                <option key={adopter.id} value={adopter.id}>
-                  {adopter.name} - {adopter.contact}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="form-actions">
-          <button type="button" onClick={handleSubmit} className="btn btn-primary">
-            {editingPet ? 'Update Pet' : 'Add Pet'}
-          </button>
-          <button type="button" onClick={handleReset} className="btn btn-secondary">
-            {editingPet ? 'Cancel' : 'Reset'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Adopter Form Component
-const AdopterForm = ({ onSubmit }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    contact: '',
-    address: '',
-  });
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-    setFormData({ name: '', contact: '', address: '' });
-  };
-
-  return (
-    <div className="form-container">
-      <h2>Add Adopter</h2>
-      <div className="form">
-        <div className="form-group">
-          <label>Name *</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            placeholder="Full name"
-          />
-        </div>
-        <div className="form-group">
-          <label>Contact *</label>
-          <input
-            type="text"
-            name="contact"
-            value={formData.contact}
-            onChange={handleChange}
-            required
-            placeholder="Phone or email"
-          />
-        </div>
-        <div className="form-group">
-          <label>Address *</label>
-          <textarea
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            required
-            placeholder="Full address"
-            rows="3"
-          />
-        </div>
-        <button type="button" onClick={handleSubmit} className="btn btn-primary">Add Adopter</button>
-      </div>
-    </div>
-  );
-};
-
-// Adopter List Component
-const AdopterList = ({ adopters, onDelete, loading }) => {
-  if (loading) {
-    return <div className="loading">Loading adopters...</div>;
-  }
-
-  if (adopters.length === 0) {
-    return <div className="empty-state">No adopters registered yet.</div>;
-  }
-
-  return (
-    <div className="adopter-list">
-      <h2>Registered Adopters</h2>
-      <div className="table-container">
-        <table className="adopter-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Contact</th>
-              <th>Address</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {adopters.map((adopter) => (
-              <tr key={adopter.id}>
-                <td>{adopter.name}</td>
-                <td>{adopter.contact}</td>
-                <td>{adopter.address}</td>
-                <td>
-                  <button
-                    onClick={() => onDelete(adopter.id)}
-                    className="btn btn-delete btn-sm"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// Main App Component
 const App = () => {
   const [pets, setPets] = useState([]);
   const [adopters, setAdopters] = useState([]);
@@ -369,7 +14,6 @@ const App = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('pets');
 
-  // Initialize with dummy data
   useEffect(() => {
     // Dummy pets data
     setPets([
@@ -465,10 +109,8 @@ const App = () => {
   // Add or update pet
   const handlePetSubmit = (petData) => {
     if (editingPet) {
-      // Update existing pet
       const updatedPet = { ...editingPet, ...petData };
-      
-      // If adopted and has adopter, attach adopter info
+
       if (petData.adopted && petData.adopterId) {
         const adopter = adopters.find(a => a.id === parseInt(petData.adopterId));
         if (adopter) {
@@ -477,24 +119,19 @@ const App = () => {
       } else {
         updatedPet.adopter = null;
       }
-      
+
       setPets(pets.map((p) => (p.id === editingPet.id ? updatedPet : p)));
       setEditingPet(null);
     } else {
-      // Add new pet
-      const newPet = { 
-        ...petData, 
-        id: Date.now()
-      };
-      
-      // If adopted and has adopter, attach adopter info
+      const newPet = { ...petData, id: Date.now() };
+
       if (petData.adopted && petData.adopterId) {
         const adopter = adopters.find(a => a.id === parseInt(petData.adopterId));
         if (adopter) {
           newPet.adopter = adopter;
         }
       }
-      
+
       setPets([...pets, newPet]);
     }
   };
@@ -507,24 +144,20 @@ const App = () => {
 
   // Add adopter
   const handleAdopterSubmit = (adopterData) => {
-    const newAdopter = { 
-      ...adopterData, 
-      id: Date.now() 
-    };
+    const newAdopter = { ...adopterData, id: Date.now() };
     setAdopters([...adopters, newAdopter]);
   };
 
   // Delete adopter
   const handleAdopterDelete = (id) => {
     if (!window.confirm('Are you sure you want to delete this adopter?')) return;
-    
-    // Check if adopter has any pets
+
     const hasPets = pets.some(p => p.adopterId === id);
     if (hasPets) {
       alert('Cannot delete adopter. Please reassign their pets first.');
       return;
     }
-    
+
     setAdopters(adopters.filter((a) => a.id !== id));
   };
 
