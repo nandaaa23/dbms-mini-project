@@ -1,0 +1,10 @@
+com\petadoption\config\CorsConfig.class
+com\petadoption\entity\Pet.class
+com\petadoption\service\AdopterService.class
+com\petadoption\entity\Adopter.class
+com\petadoption\controller\PetController.class
+com\petadoption\PetAdoptionSystemApplication.class
+com\petadoption\repository\AdopterRepository.class
+com\petadoption\controller\AdopterController.class
+com\petadoption\service\PetService.class
+com\petadoption\repository\PetRepository.class
